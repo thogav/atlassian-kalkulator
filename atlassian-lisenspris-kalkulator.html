@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atlassian lisenspris – Premium vs Enterprise</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: #e2e0d8;
+    --text: #1a1917;
+    --text2: #6b6860;
+    --text3: #9b9890;
+    --blue: #1a56e8;
+    --blue-bg: #eef2fd;
+    --green: #0f7b55;
+    --green-bg: #e6f4ee;
+    --red: #c0392b;
+    --red-bg: #fdf0ee;
+    --amber: #92600a;
+    --amber-bg: #fdf3e3;
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 0;
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 3rem;
+  }
+
+  header {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  header h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  header p {
+    font-size: 13px;
+    color: var(--text2);
+  }
+
+  .tag {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+    vertical-align: middle;
+    margin-left: 6px;
+  }
+  .tag-inc { background: var(--green-bg); color: var(--green); }
+  .tag-ext { background: var(--amber-bg); color: var(--amber); }
+
+  /* Result cards */
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    transition: border-color 0.25s, background 0.25s;
+  }
+
+  .result-card.winner {
+    background: var(--green-bg);
+    border-color: #a8d9c4;
+  }
+
+  .result-card.loser {
+    background: var(--red-bg);
+    border-color: #f0c4be;
+  }
+
+  .result-card .plan-label {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text3);
+    margin-bottom: 6px;
+  }
+
+  .result-card .amount {
+    font-family: 'DM Mono', monospace;
+    font-size: 26px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+    margin-bottom: 4px;
+  }
+
+  .result-card.winner .amount { color: var(--green); }
+  .result-card.loser .amount { color: var(--red); }
+
+  .result-card .breakdown {
+    font-size: 11px;
+    color: var(--text2);
+    line-height: 1.7;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .saving-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .saving-card .delta-box {
+    font-family: 'DM Mono', monospace;
+    font-size: 28px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .saving-card .delta-box.win { color: var(--green); }
+  .saving-card .delta-box.lose { color: var(--red); }
+
+  .saving-card .delta-text .headline {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .saving-card .delta-text .sub {
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  /* Section titles */
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text3);
+    margin-bottom: 12px;
+  }
+
+  .section { margin-bottom: 2rem; }
+
+  /* Controls */
+  .controls-grid {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+  }
+
+  .controls-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 2rem;
+  }
+
+  .ctrl-group {
+    margin-bottom: 1rem;
+  }
+
+  .ctrl-group:last-child { margin-bottom: 0; }
+
+  .ctrl-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 5px;
+  }
+
+  .ctrl-label span:first-child {
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  .ctrl-label .ctrl-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    background: var(--surface2);
+    padding: 1px 7px;
+    border-radius: 4px;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--blue);
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    transition: transform 0.15s;
+  }
+
+  input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--blue);
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+
+  .divider-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text3);
+    padding: 0.75rem 0 0.5rem;
+    border-top: 1px solid var(--border);
+    margin-top: 0.5rem;
+    grid-column: 1 / -1;
+  }
+
+  /* Breakdown table */
+  .breakdown-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .breakdown-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+  }
+
+  .breakdown-card .plan-header {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text3);
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .brow {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 8px;
+  }
+
+  .brow:last-child {
+    border-bottom: none;
+    font-weight: 500;
+    font-size: 13px;
+    padding-top: 8px;
+  }
+
+  .brow .bkey { color: var(--text2); }
+  .brow .bval { font-family: 'DM Mono', monospace; color: var(--text); white-space: nowrap; }
+  .brow .bval.inc { color: var(--green); }
+
+  /* Chart */
+  .chart-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+  }
+
+  .chart-legend {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 1rem;
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  .chart-legend span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .chart-canvas-wrap {
+    position: relative;
+    width: 100%;
+    height: 260px;
+  }
+
+  footer {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text3);
+    line-height: 1.7;
+  }
+
+  @media (max-width: 600px) {
+    .result-grid, .controls-cols, .breakdown-cols { grid-template-columns: 1fr; }
+    .divider-label { grid-column: 1; }
+    .saving-card { flex-direction: column; gap: 0.5rem; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <h1>Atlassian lisenspris – Premium vs Enterprise</h1>
+    <p>Kalkulator for sammenligning av totalkostnad ved 3 Atlassian Cloud-siter under én org. Juster alle parametere nedenfor.</p>
+  </header>
+
+  <!-- Result cards -->
+  <div class="section">
+    <div class="section-title">Totalkostnad per år (inkl. Guard)</div>
+    <div class="result-grid">
+      <div class="result-card" id="premCard">
+        <div class="plan-label">Premium + Guard Standard</div>
+        <div class="amount" id="premAmount">–</div>
+        <div class="breakdown" id="premBreakInline">–</div>
+      </div>
+      <div class="result-card" id="entCard">
+        <div class="plan-label">Enterprise <span class="tag tag-inc">Guard inkludert</span></div>
+        <div class="amount" id="entAmount">–</div>
+        <div class="breakdown" id="entBreakInline">–</div>
+      </div>
+    </div>
+    <div class="saving-card">
+      <div class="delta-box" id="deltaBox">–</div>
+      <div class="delta-text">
+        <div class="headline" id="deltaHeadline">–</div>
+        <div class="sub" id="deltaSub">–</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="section">
+    <div class="section-title">Parametere</div>
+    <div class="controls-grid">
+      <div class="controls-cols">
+
+        <div class="divider-label" style="border-top:none; padding-top:0; margin-top:0;">Brukertall</div>
+
+        <div class="ctrl-group">
+          <div class="ctrl-label"><span>Jira-brukere totalt</span><span class="ctrl-val" id="v-jiraTotal">400</span></div>
+          <input type="range" id="jiraTotal" min="100" max="1000" step="50" value="400">
+        </div>
+        <div class="ctrl-group">
+          <div class="ctrl-label"><span>Confluence-brukere totalt</span><span class="ctrl-val" id="v-confTotal">600</span></div>
+          <input type="range" id="confTotal" min="100" max="1200" step="50" value="600">
+        </div>
+        <div class="ctrl-group">
+          <div class="ctrl-label"><span>Jira multi-site brukere</span><span class="ctrl-val" id="v-jiraMulti">250</span></div>
+          <input type="range" id="jiraMulti" min="0" max="400" step="10" value="250">
+        </div>
+        <div class="ctrl-group">
+          <div class="ctrl-label"><span>Confluence multi-site brukere</span><span class="ctrl-val" id="v-confMulti">400</span></div>
+          <input type="range" id="confMulti" min="0" max="600" step="10" value="400">
+        </div>
+        <div class="ctrl-group">
+          <div class="ctrl-label"><span>Siter per Jira multi-bruker</span><span class="ctrl-val" id="v-jiraSites">2</span></div>
+          <input type="range" id="jiraSites" min="2" max="3" step="1" value="2">
+        </div>
+        <div class="ctrl-group">
+          <div class="ctrl-label"><span>Siter per Confluence multi-bruker</span><span class="ctrl-val" id="v-confSites">2</span></div>
+          <input type="range" id="confSites" min="2" max="3" step="1" value="2">
+        </div>
+        <div class="ctrl-group">
+          <div class="ctrl-label"><span>Unike brukere Guard dekker</span><span class="ctrl-val" id="v-guardUsers">800</span></div>
+          <input type="range" id="guardUsers" min="100" max="1500" step="50" value="800">
+        </div>
+
+        <div class="divider-label">Priser</div>
+
+        <div class="ctrl-group">
+          <div class="ctrl-label"><span>Jira Premium (NOK/bruker/år)</span><span class="ctrl-val" id="v-jiraPrice">1 300</span></div>
+          <input type="range" id="jiraPrice" min="500" max="3000" step="50" value="1300">
+        </div>
+        <div class="ctrl-group">
+          <div class="ctrl-label"><span>Confluence Premium (NOK/bruker/år)</span><span class="ctrl-val" id="v-confPrice">900</span></div>
+          <input type="range" id="confPrice" min="300" max="2000" step="50" value="900">
+        </div>
+        <div class="ctrl-group">
+          <div class="ctrl-label"><span>Guard Standard (NOK/bruker/år)</span><span class="ctrl-val" id="v-guardPrice">544</span></div>
+          <input type="range" id="guardPrice" min="200" max="1200" step="20" value="544">
+        </div>
+        <div class="ctrl-group">
+          <div class="ctrl-label"><span>Enterprise-faktor (× Premium-pris)</span><span class="ctrl-val" id="v-entFactor">2.0×</span></div>
+          <input type="range" id="entFactor" min="1.0" max="4.0" step="0.1" value="2.0">
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Breakdown -->
+  <div class="section">
+    <div class="section-title">Kostnadsoversikt</div>
+    <div class="breakdown-cols">
+      <div class="breakdown-card">
+        <div class="plan-header">Premium + Guard</div>
+        <div id="premBreakTable"></div>
+      </div>
+      <div class="breakdown-card">
+        <div class="plan-header">Enterprise</div>
+        <div id="entBreakTable"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div class="section">
+    <div class="section-title">Visuell sammenligning</div>
+    <div class="chart-wrap">
+      <div class="chart-legend" id="chartLegend"></div>
+      <div class="chart-canvas-wrap">
+        <canvas id="chart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Guard Standard: $4,20/bruker/mnd (ca. 544 NOK ved kurs 10,8) – juster etter aktuell kurs. Enterprise inkluderer Guard Standard uten tilleggskostnad. 
+    Marketplace-apper faktureres separat per instans også på Enterprise – dette er ikke inkludert i kalkulatoren.
+    Tall er estimater og ikke bindende. Kontakt Atlassian Sales for offisielt tilbud.
+  </footer>
+
+</div>
+
+<script>
+  const fmt = n => Math.round(n).toLocaleString('nb-NO');
+
+  const ids = ['jiraTotal','jiraMulti','jiraSites','confTotal','confMulti','confSites','guardUsers','jiraPrice','confPrice','guardPrice','entFactor'];
+
+  function calc() {
+    const jiraTotal  = +document.getElementById('jiraTotal').value;
+    const jiraMulti  = Math.min(+document.getElementById('jiraMulti').value, jiraTotal);
+    const jiraSites  = +document.getElementById('jiraSites').value;
+    const confTotal  = +document.getElementById('confTotal').value;
+    const confMulti  = Math.min(+document.getElementById('confMulti').value, confTotal);
+    const confSites  = +document.getElementById('confSites').value;
+    const guardUsers = +document.getElementById('guardUsers').value;
+    const jiraPrice  = +document.getElementById('jiraPrice').value;
+    const confPrice  = +document.getElementById('confPrice').value;
+    const guardPrice = +document.getElementById('guardPrice').value;
+    const ef         = +document.getElementById('entFactor').value;
+
+    // update display values
+    document.getElementById('v-jiraTotal').textContent  = jiraTotal;
+    document.getElementById('v-jiraMulti').textContent  = Math.min(jiraMulti, jiraTotal);
+    document.getElementById('v-jiraSites').textContent  = jiraSites;
+    document.getElementById('v-confTotal').textContent  = confTotal;
+    document.getElementById('v-confMulti').textContent  = Math.min(confMulti, confTotal);
+    document.getElementById('v-confSites').textContent  = confSites;
+    document.getElementById('v-guardUsers').textContent = guardUsers;
+    document.getElementById('v-jiraPrice').textContent  = jiraPrice.toLocaleString('nb-NO');
+    document.getElementById('v-confPrice').textContent  = confPrice.toLocaleString('nb-NO');
+    document.getElementById('v-guardPrice').textContent = guardPrice.toLocaleString('nb-NO');
+    document.getElementById('v-entFactor').textContent  = ef.toFixed(1) + '×';
+
+    const jiraSingle = jiraTotal - jiraMulti;
+    const confSingle = confTotal - confMulti;
+
+    const premJira  = jiraSingle * jiraPrice + jiraMulti * jiraSites * jiraPrice;
+    const premConf  = confSingle * confPrice + confMulti * confSites * confPrice;
+    const premGuard = guardUsers * guardPrice;
+    const premTotal = premJira + premConf + premGuard;
+
+    const entJiraP = jiraPrice * ef;
+    const entConfP = confPrice * ef;
+    const entJira  = jiraTotal * entJiraP;
+    const entConf  = confTotal * entConfP;
+    const entTotal = entJira + entConf;
+
+    const saving = premTotal - entTotal;
+
+    // result cards
+    document.getElementById('premAmount').textContent      = fmt(premTotal) + ' NOK';
+    document.getElementById('premBreakInline').textContent = 'Jira ' + fmt(premJira) + ' · Confluence ' + fmt(premConf) + ' · Guard ' + fmt(premGuard);
+    document.getElementById('entAmount').textContent       = fmt(entTotal) + ' NOK';
+    document.getElementById('entBreakInline').textContent  = 'Jira ' + fmt(entJira) + ' · Confluence ' + fmt(entConf) + ' · Guard 0';
+
+    document.getElementById('premCard').className = 'result-card ' + (saving > 0 ? 'loser' : 'winner');
+    document.getElementById('entCard').className  = 'result-card ' + (saving > 0 ? 'winner' : 'loser');
+
+    const deltaBox      = document.getElementById('deltaBox');
+    const deltaHeadline = document.getElementById('deltaHeadline');
+    const deltaSub      = document.getElementById('deltaSub');
+
+    if (saving > 0) {
+      deltaBox.className      = 'delta-box win';
+      deltaBox.textContent    = '−' + fmt(saving) + ' NOK';
+      deltaHeadline.textContent = 'Enterprise er billigst';
+      deltaSub.textContent    = Math.round((saving / premTotal) * 100) + '% lavere totalkostnad enn Premium + Guard';
+    } else {
+      deltaBox.className      = 'delta-box lose';
+      deltaBox.textContent    = '+' + fmt(Math.abs(saving)) + ' NOK';
+      deltaHeadline.textContent = 'Premium + Guard er billigst';
+      deltaSub.textContent    = Math.round((Math.abs(saving) / entTotal) * 100) + '% høyere totalkostnad med Enterprise';
+    }
+
+    // breakdown tables
+    document.getElementById('premBreakTable').innerHTML = `
+      <div class="brow"><span class="bkey">Jira enkelt-site (${jiraSingle} × 1)</span><span class="bval">${fmt(jiraSingle * jiraPrice)}</span></div>
+      <div class="brow"><span class="bkey">Jira multi-site (${jiraMulti} × ${jiraSites})</span><span class="bval">${fmt(jiraMulti * jiraSites * jiraPrice)}</span></div>
+      <div class="brow"><span class="bkey">Confluence enkelt-site (${confSingle} × 1)</span><span class="bval">${fmt(confSingle * confPrice)}</span></div>
+      <div class="brow"><span class="bkey">Confluence multi-site (${confMulti} × ${confSites})</span><span class="bval">${fmt(confMulti * confSites * confPrice)}</span></div>
+      <div class="brow"><span class="bkey">Guard Standard (${guardUsers} brukere)</span><span class="bval">${fmt(premGuard)}</span></div>
+      <div class="brow"><span class="bkey">Totalt</span><span class="bval">${fmt(premTotal)} NOK</span></div>
+    `;
+
+    document.getElementById('entBreakTable').innerHTML = `
+      <div class="brow"><span class="bkey">Jira (${jiraTotal} brukere)</span><span class="bval">${fmt(entJira)}</span></div>
+      <div class="brow"><span class="bkey">Confluence (${confTotal} brukere)</span><span class="bval">${fmt(entConf)}</span></div>
+      <div class="brow"><span class="bkey">Guard Standard</span><span class="bval inc">Inkludert</span></div>
+      <div class="brow"><span class="bkey">Multi-site tillegg</span><span class="bval inc">Ingen</span></div>
+      <div class="brow"><span class="bkey">Totalt</span><span class="bval">${fmt(entTotal)} NOK</span></div>
+    `;
+
+    // chart
+    const entColor = saving > 0 ? '#0f7b55' : '#c0392b';
+    if (window._chart) window._chart.destroy();
+    window._chart = new Chart(document.getElementById('chart'), {
+      type: 'bar',
+      data: {
+        labels: ['Jira', 'Confluence', 'Guard', 'Totalt'],
+        datasets: [
+          {
+            label: 'Premium + Guard',
+            data: [Math.round(premJira), Math.round(premConf), Math.round(premGuard), Math.round(premTotal)],
+            backgroundColor: '#1a56e8',
+            borderRadius: 5,
+            barPercentage: 0.7
+          },
+          {
+            label: 'Enterprise',
+            data: [Math.round(entJira), Math.round(entConf), 0, Math.round(entTotal)],
+            backgroundColor: entColor,
+            borderRadius: 5,
+            barPercentage: 0.7
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                if (ctx.parsed.y === 0 && ctx.datasetIndex === 1) return 'Enterprise: inkludert';
+                return ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString('nb-NO') + ' NOK';
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            ticks: { callback: v => (v / 1000000).toFixed(1) + 'M', color: '#9b9890', font: { family: 'DM Mono', size: 11 } },
+            grid: { color: 'rgba(0,0,0,0.06)' },
+            border: { display: false }
+          },
+          x: {
+            ticks: { color: '#6b6860', font: { family: 'DM Sans', size: 12 }, autoSkip: false },
+            grid: { display: false },
+            border: { display: false }
+          }
+        }
+      }
+    });
+
+    document.getElementById('chartLegend').innerHTML = `
+      <span><span class="legend-dot" style="background:#1a56e8;"></span>Premium + Guard</span>
+      <span><span class="legend-dot" style="background:${entColor};"></span>Enterprise (Guard inkl.)</span>
+    `;
+  }
+
+  ids.forEach(id => document.getElementById(id).addEventListener('input', calc));
+  calc();
+</script>
+</body>
+</html>
